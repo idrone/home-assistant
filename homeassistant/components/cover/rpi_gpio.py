@@ -1,9 +1,7 @@
 """
 Support for building a Raspberry Pi cover in HA.
-
 Instructions for building the controller can be found here
 https://github.com/andrewshilliday/garage-door-controller
-
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/cover.rpi_gpio/
 """
@@ -20,7 +18,7 @@ import homeassistant.helpers.config_validation as cv
 _LOGGER = logging.getLogger(__name__)
 
 CONF_COVERS = 'covers'
-CONF_RELAY_PIN = 'relay_pin'
+CONF_RELAY_PIN_UP = 'relay_pin_up'
 CONF_RELAY_TIME = 'relay_time'
 CONF_STATE_PIN = 'state_pin'
 CONF_STATE_PULL_MODE = 'state_pull_mode'
@@ -34,7 +32,7 @@ _COVERS_SCHEMA = vol.All(
     [
         vol.Schema({
             CONF_NAME: cv.string,
-            CONF_RELAY_PIN: cv.positive_int,
+            CONF_RELAY_PIN_UP: cv.positive_int,
             CONF_STATE_PIN: cv.positive_int,
         })
     ]
@@ -58,7 +56,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 
     for cover in covers_conf:
         covers.append(RPiGPIOCover(
-            cover[CONF_NAME], cover[CONF_RELAY_PIN], cover[CONF_STATE_PIN],
+            cover[CONF_NAME], cover[CONF_RELAY_PIN_UP], cover[CONF_STATE_PIN],
             state_pull_mode, relay_time))
     add_devices(covers)
 
@@ -66,18 +64,18 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class RPiGPIOCover(CoverDevice):
     """Representation of a Raspberry GPIO cover."""
 
-    def __init__(self, name, relay_pin, state_pin, state_pull_mode,
+    def __init__(self, name, relay_pin_up, state_pin, state_pull_mode,
                  relay_time):
         """Initialize the cover."""
         self._name = name
         self._state = False
-        self._relay_pin = relay_pin
+        self._relay_pin_up = relay_pin_up
         self._state_pin = state_pin
         self._state_pull_mode = state_pull_mode
         self._relay_time = relay_time
-        rpi_gpio.setup_output(self._relay_pin)
+        rpi_gpio.setup_output(self._relay_pin_up)
         rpi_gpio.setup_input(self._state_pin, self._state_pull_mode)
-        rpi_gpio.write_output(self._relay_pin, True)
+        rpi_gpio.write_output(self._relay_pin_up, False)
 
     @property
     def unique_id(self):
@@ -100,14 +98,14 @@ class RPiGPIOCover(CoverDevice):
 
     def _trigger(self):
         """Trigger the cover."""
-        rpi_gpio.write_output(self._relay_pin, False)
+        rpi_gpio.write_output(self._relay_pin_up, False)
         sleep(self._relay_time)
-        rpi_gpio.write_output(self._relay_pin, True)
+        rpi_gpio.write_output(self._relay_pin_up, True)
 
     def close_cover(self):
         """Close the cover."""
         if not self.is_closed:
-            self._trigger()
+            self._trigger() 
 
     def open_cover(self):
         """Open the cover."""
