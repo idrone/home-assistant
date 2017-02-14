@@ -23,9 +23,11 @@ CONF_COVERS = 'covers'
 CONF_RELAY_PIN_UP = 'relay_pin_up'
 CONF_RELAY_PIN_DOWN = 'relay_pin_down'
 CONF_RELAY_TIME = 'relay_time'
+CONF_RELAY_STEP_TIME = 'relay_step_time'
 CONF_STATE_PIN_UP = 'state_pin_up'
 CONF_STATE_PIN_DOWN = 'state_pin_down'
 CONF_STATE_PULL_MODE = 'state_pull_mode'
+
 
 DEFAULT_RELAY_TIME = .2
 DEFAULT_STATE_PULL_MODE = 'UP'
@@ -48,6 +50,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_STATE_PULL_MODE, default=DEFAULT_STATE_PULL_MODE):
         cv.string,
     vol.Optional(CONF_RELAY_TIME, default=DEFAULT_RELAY_TIME): cv.positive_int,
+    vol.Optional(CONF_RELAY_STEP_TIME, default=CONF_RELAY_TIME/100): cv.positive_int,
     vol.Optional(CONF_STATE_PIN_UP, default=0): cv.positive_int,
     vol.Optional(CONF_STATE_PIN_DOWN, default=0): cv.positive_int,
 })
@@ -82,15 +85,14 @@ class RPiGPIOCover(CoverDevice):
         self._relay_pin_down = relay_pin_down
         self._state_pull_mode = state_pull_mode
         self._relay_time = relay_time
-        self._relay_step_time = relay_time
+        self._relay_step_time = relay_step_time
         rpi_gpio.setup_output(self._relay_pin_up)
         rpi_gpio.setup_output(self._relay_pin_down)
-        if (!self._state_pin_up == 0){
+        if self._state_pin_up not == 0:
             rpi_gpio.setup_input(self._state_pin_up, self._state_pull_mode)
-        }
-        if (!self._state_pin_down == 0){
+        if self._state_pin_down not == 0:
         rpi_gpio.setup_input(self._state_pin_down, self._state_pull_mode)
-        }
+        
 
     @property
     def unique_id(self):
@@ -104,12 +106,10 @@ class RPiGPIOCover(CoverDevice):
 
     def update(self):
         """Update the state of the cover."""
-        if (!self._state_pin_up == 0){
+        if self._state_pin_up not == 0:
         self._state_up = rpi_gpio.read_input(self._state_pin_up)
-        }
-        if (!self._state_pin_down == 0){
+        if self._state_pin_down not == 0:
         self._state_down = rpi_gpio.read_input(self._state_pin_down)
-        }
 
     @property
     def is_closed(self):
@@ -136,7 +136,7 @@ class RPiGPIOCover(CoverDevice):
     def close_cover(self):
         """Close the cover."""
         if not self.is_closed:
-            if (self._relay_pin_down == 0) :
+            if self._relay_pin_down == 0 :
                 count = 0
                 while (count < 100):
                     self._trigger_down()
